@@ -3,6 +3,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+const path = require('path');
 require('dotenv').config();
 
 // Import routes
@@ -16,6 +19,14 @@ const { authMiddleware } = require('./middleware/auth.middleware');
 // Initialize Express app
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+const swaggerDocument = YAML.load(path.join(__dirname, 'swagger.yaml'));
+
+// Swagger UI route
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Order Processing System API',
+}));
 
 // Middleware
 app.use(express.json());

@@ -1,0 +1,409 @@
+openapi: 3.0.3
+info:
+  title: Order Processing System API
+  description: |
+    A scalable, event-driven Order Processing System API documentation.
+    
+    ## Authentication
+    - All endpoints (except registration and login) require a valid JWT token
+    - Include the token in the Authorization header: `Bearer <token>`
+    
+    ## Error Handling
+    - Standard error responses include:
+      - 400: Bad Request (invalid input)
+      - 401: Unauthorized (invalid credentials)
+      - 403: Forbidden (insufficient permissions)
+      - 404: Not Found
+      - 500: Internal Server Error
+  version: 1.0.0
+  contact:
+    name: Order Processing System Support
+    email: support@orderprocessing.com
+
+servers:
+  - url: http://localhost:3000/api
+    description: Local development server
+  - url: https://api.orderprocessing.com/v1
+    description: Production server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+        - name
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          minLength: 8
+          example: strongPassword123
+        name:
+          type: string
+          example: John Doe
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: user@example.com
+        password:
+          type: string
+          example: password123
+
+    OrderItem:
+      type: object
+      required:
+        - productId
+        - quantity
+      properties:
+        productId:
+          type: string
+          example: prod_123456
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+
+    ShippingAddress:
+      type: object
+      required:
+        - street
+        - city
+        - state
+        - zipCode
+        - country
+      properties:
+        street:
+          type: string
+          example: 123 Main St
+        city:
+          type: string
+          example: New York
+        state:
+          type: string
+          example: NY
+        zipCode:
+          type: string
+          example: "10001"
+        country:
+          type: string
+          example: USA
+
+    OrderCreation:
+      type: object
+      required:
+        - items
+        - shippingAddress
+        - paymentMethod
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        paymentMethod:
+          type: string
+          enum:
+            - Credit Card
+            - PayPal
+            - Bank Transfer
+          example: Credit Card
+
+    Order:
+      type: object
+      properties:
+        orderId:
+          type: string
+          example: ord_123456
+        userId:
+          type: string
+          example: user_123456
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              productId:
+                type: string
+                example: prod_123456
+              name:
+                type: string
+                example: Wireless Headphones
+              quantity:
+                type: integer
+                example: 2
+              price:
+                type: number
+                format: float
+                example: 99.99
+        totalAmount:
+          type: number
+          format: float
+          example: 199.98
+        status:
+          type: string
+          enum:
+            - Pending
+            - Processed
+            - Failed
+          example: Pending
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        paymentMethod:
+          type: string
+          example: Credit Card
+        createdAt:
+          type: string
+          format: date-time
+
+paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistration'
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      userId:
+                        type: string
+                        example: user_123456
+        '400':
+          description: Registration failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Email already exists
+
+  /auth/login:
+    post:
+      summary: User login
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      accessToken:
+                        type: string
+                        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                      refreshToken:
+                        type: string
+                        example: refresh_token_123456
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Invalid email or password
+
+  /orders:
+    post:
+      summary: Create a new order
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreation'
+      responses:
+        '201':
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/components/schemas/Order'
+        '400':
+          description: Order creation failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Insufficient inventory for one or more items
+
+    get:
+      summary: Get user's orders with pagination
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Number of orders per page
+      responses:
+        '200':
+          description: Successfully retrieved user orders
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      orders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Order'
+                      pagination:
+                        type: object
+                        properties:
+                          total:
+                            type: integer
+                            example: 50
+                          page:
+                            type: integer
+                            example: 1
+                          limit:
+                            type: integer
+                            example: 10
+                          pages:
+                            type: integer
+                            example: 5
+
+  /orders/{id}:
+    get:
+      summary: Get specific order details
+      tags:
+        - Orders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: Unique order ID
+      responses:
+        '200':
+          description: Successfully retrieved order details
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      order:
+                        $ref: '#/components/schemas/Order'
+                      source:
+                        type: string
+                        enum:
+                          - cache
+                          - database
+                        example: cache
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Order not found
