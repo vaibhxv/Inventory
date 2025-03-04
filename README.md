@@ -2,7 +2,7 @@
 
 A scalable, event-driven Order Processing System built with Node.js, Express, MongoDB, Redis, and AWS.
 
-**API Documentation**: [Swagger UI Docs](http://localhost:3000/api-docs)
+**API Documentation**: [Swagger UI Docs](https://inventory-2pya.onrender.com/api-docs)
 
 ## Features
 
